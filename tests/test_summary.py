@@ -70,3 +70,15 @@ def test_to_dict_keys():
     }
     assert expected_keys == set(d.keys())
     assert d["total_duration_s"] == pytest.approx(2.5)
+
+
+def test_all_failed():
+    """Summary should still compute durations correctly when all jobs fail."""
+    results = [_make_result(d, success=False) for d in [2.0, 4.0]]
+    s = summarize(results)
+    assert s.total == 2
+    assert s.succeeded == 0
+    assert s.failed == 2
+    assert s.min_duration == pytest.approx(2.0)
+    assert s.max_duration == pytest.approx(4.0)
+    assert s.avg_duration == pytest.approx(3.0)
