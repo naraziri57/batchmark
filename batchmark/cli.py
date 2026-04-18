@@ -3,10 +3,11 @@
 import argparse
 import subprocess
 import sys
-import time
 from typing import List, Optional
 
+from batchmark.exporter import export_report
 from batchmark.report import render_report
+from batchmark.summary import summarize
 from batchmark.timer import JobTimer
 
 
@@ -15,66 +16,53 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         prog="batchmark",
         description="Benchmark batch jobs and output structured timing reports.",
     )
+    parser.add_argument("command", nargs="+", help="Command to benchmark.")
     parser.add_argument(
-        "commands",
-        nargs="+",
-        metavar="CMD",
-        help="Commands to benchmark (each as a single quoted string).",
+        "--runs", type=int, default=1, help="Number of times to run the command."
     )
     parser.add_argument(
-        "--format",
-        choices=["text", "json", "csv"],
-        default="text",
-        dest="fmt",
-        help="Output format (default: text).",
+        "--format", dest="fmt", choices=("text", "json", "csv"), default="text"
     )
     parser.add_argument(
-        "--runs",
-        type=int,
-        default=1,
-        help="Number of times to run each command (default: 1).",
-    )
-    parser.add_argument(
-        "--output",
-        metavar="FILE",
-        default=None,
-        help="Write report to FILE instead of stdout.",
+        "--output", dest="output", default=None, help="Write report to this file."
     )
     return parser.parse_args(argv)
 
 
-def run_command(cmd: str) -> tuple[bool, float]:
-    """Run a shell command and return (success, elapsed_seconds)."""
-    start = time.perf_counter()
+def run_command(command: List[str]) -> tuple:
+    """Run a shell command, return (success, error_msg)."""
     try:
-        result = subprocess.run(cmd, shell=True, check=False)
-        elapsed = time.perf_counter() - start
-        return result.returncode == 0, elapsed
-    except Exception:
-        elapsed = time.perf_counter() - start
-        return False, elapsed
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            return False, result.stderr.strip() or f"exit code {result.returncode}"
+        return True, None
+    except Exception as exc:  # noqa: BLE001
+        return False, str(exc)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
-    timer = JobTimer()
 
-    for cmd in args.commands:
-        for run_idx in range(args.runs):
-            job_id = cmd if args.runs == 1 else f"{cmd}[{run_idx + 1}]"
-            timer.start(job_id)
-            success, _ = run_command(cmd)
-            timer.finish(job_id, success=success)
+    results = []
+    for i in range(args.runs):
+        job_name = " ".join(args.command)
+        if args.runs > 1:
+            job_name = f"{job_name} (run {i + 1})"
+        timer = JobTimer(job_name)
+        timer.start()
+        success, error = run_command(args.command)
+        result = timer.finish(success=success, error=error)
+        results.append(result)
 
-    report = render_report(timer.results, fmt=args.fmt)
+    summary = summarize(results)
 
     if args.output:
-        with open(args.output, "w") as fh:
-            fh.write(report)
+        written = export_report(summary, results, args.output, fmt=args.fmt if args.fmt != "text" else None)
+        print(f"Report written to {written}", file=sys.stderr)
     else:
-        print(report)
+        print(render_report(summary, results, fmt=args.fmt))
 
-    return 0
+    return 0 if summary.failed == 0 else 1
 
 
 if __name__ == "__main__":
