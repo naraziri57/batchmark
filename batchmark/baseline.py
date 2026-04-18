@@ -25,7 +25,12 @@ def load_baseline(name: str, directory: str = DEFAULT_BASELINE_DIR) -> list[Timi
     if not os.path.exists(path):
         raise FileNotFoundError(f"Baseline '{name}' not found at {path}")
     with open(path, "r") as f:
-        data = json.load(f)
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Baseline '{name}' contains invalid JSON: {e}") from e
+    if not isinstance(data, list):
+        raise ValueError(f"Baseline '{name}' has unexpected format: expected a list")
     return [_from_dict(d) for d in data]
 
 
