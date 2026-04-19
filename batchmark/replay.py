@@ -24,7 +24,10 @@ def load_replay(path: str | Path) -> List[TimingResult]:
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Replay file not found: {path}")
-    data = json.loads(p.read_text())
+    try:
+        data = json.loads(p.read_text())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Replay file contains invalid JSON: {e}") from e
     if not isinstance(data, list):
         raise ValueError("Replay file must contain a JSON array of results")
     return [_result_from_dict(item) for item in data]
