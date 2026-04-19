@@ -32,6 +32,12 @@ def test_infer_format_unknown_defaults_text():
     assert _infer_format("report.xyz") == "text"
 
 
+def test_infer_format_uppercase_extension():
+    """Extension matching should be case-insensitive."""
+    assert _infer_format("report.JSON") == "json"
+    assert _infer_format("report.CSV") == "csv"
+
+
 def test_export_json(tmp_path):
     results = [_make_result("job1", 1.0), _make_result("job2", 2.0)]
     summary = summarize(results)
@@ -85,3 +91,16 @@ def test_export_fmt_override(tmp_path):
     export_report(summary, results, str(out), fmt="json")
     data = json.loads(out.read_text())
     assert "summary" in data
+
+
+def test_export_json_result_fields(tmp_path):
+    """Each result entry in the JSON export should contain expected fields."""
+    results = [_make_result("job1", 1.5), _make_result("job2", 2.5, success=False)]
+    summary = summarize(results)
+    out = tmp_path / "report.json"
+    export_report(summary, results, str(out))
+    data = json.loads(out.read_text())
+    for entry in data["results"]:
+        assert "job_name" in entry
+        assert "duration" in entry
+        assert "success" in entry
