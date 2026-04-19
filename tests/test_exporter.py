@@ -104,3 +104,13 @@ def test_export_json_result_fields(tmp_path):
         assert "job_name" in entry
         assert "duration" in entry
         assert "success" in entry
+
+
+def test_export_returns_path_string(tmp_path):
+    """export_report should return the output path as a string."""
+    results = [_make_result("job1", 1.0)]
+    summary = summarize(results)
+    out = tmp_path / "report.json"
+    returned = export_report(summary, results, str(out))
+    assert isinstance(returned, str)
+    assert returned == str(out)
