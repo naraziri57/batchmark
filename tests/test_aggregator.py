@@ -69,6 +69,19 @@ def test_aggregate_to_dict_structure():
     assert "failure_count" in d["z"]
 
 
+def test_aggregate_to_dict_values():
+    """Check that aggregate_to_dict produces correct numeric values, not just keys."""
+    results = [
+        _make_result("k", 1.0, success=True),
+        _make_result("k", 3.0, success=True),
+        _make_result("k", 2.0, success=False),
+    ]
+    d = aggregate_to_dict(results)
+    assert d["k"]["total"] == 3
+    assert d["k"]["success_count"] == 2
+    assert d["k"]["failure_count"] == 1
+
+
 def test_aggregate_empty():
     assert aggregate([]) == {}
     assert aggregate_to_dict([]) == {}
