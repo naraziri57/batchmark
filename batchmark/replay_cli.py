@@ -24,6 +24,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="text",
         help="Output format (default: text)",
     )
+    p.add_argument(
+        "--output",
+        default=None,
+        metavar="FILE",
+        help="Write output to FILE instead of stdout",
+    )
     return p
 
 
@@ -44,7 +50,17 @@ def main(argv=None) -> None:
         sys.exit(0)
 
     summary = summarize(results)
-    print(render_report(summary, fmt=args.format))
+    report = render_report(summary, fmt=args.format)
+
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as fh:
+                fh.write(report)
+        except OSError as exc:
+            print(f"error: could not write to {args.output!r}: {exc}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(report)
 
 
 if __name__ == "__main__":
