@@ -68,3 +68,17 @@ def test_main_output_file(tmp_path, capsys):
     assert "echo hi" in content
     captured = capsys.readouterr()
     assert captured.out == ""
+
+
+def test_main_output_file_json(tmp_path, capsys):
+    """Output file should contain valid JSON when --format json is used."""
+    out_file = tmp_path / "report.json"
+    ret = main(["echo hi", "--format", "json", "--output", str(out_file)])
+    assert ret == 0
+    assert out_file.exists()
+    data = json.loads(out_file.read_text())
+    assert "results" in data
+    assert data["results"][0]["job_id"] == "echo hi"
+    # Nothing should be printed to stdout when writing to a file
+    captured = capsys.readouterr()
+    assert captured.out == ""
