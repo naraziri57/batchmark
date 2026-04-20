@@ -14,6 +14,12 @@ class ThrottleConfig:
     max_concurrent: Optional[int] = None    # unused here, reserved
     min_gap_seconds: float = 0.0            # minimum gap between job starts
 
+    def __post_init__(self) -> None:
+        if self.max_per_second is not None and self.max_per_second <= 0:
+            raise ValueError("max_per_second must be a positive number")
+        if self.min_gap_seconds < 0:
+            raise ValueError("min_gap_seconds must be non-negative")
+
 
 @dataclass
 class ThrottleReport:
