@@ -27,6 +27,10 @@ def export_report(
 
     Returns:
         Absolute path of the written file.
+
+    Raises:
+        ValueError: If the format is not supported.
+        OSError: If the file cannot be written.
     """
     if fmt is None:
         fmt = _infer_format(output_path)
@@ -41,6 +45,29 @@ def export_report(
     path.write_text(content, encoding="utf-8")
 
     return str(path.resolve())
+
+
+def export_reports(
+    summary: Summary,
+    results: list,
+    output_dir: str,
+) -> List[str]:
+    """Write reports in all supported formats to a directory.
+
+    Args:
+        summary: Summary object from summarize().
+        results: List of TimingResult objects.
+        output_dir: Directory where report files will be written.
+
+    Returns:
+        List of absolute paths for each written file.
+    """
+    written = []
+    for fmt in SUPPORTED_FORMATS:
+        ext = "txt" if fmt == "text" else fmt
+        output_path = os.path.join(output_dir, f"report.{ext}")
+        written.append(export_report(summary, results, output_path, fmt=fmt))
+    return written
 
 
 def _infer_format(path: str) -> str:
