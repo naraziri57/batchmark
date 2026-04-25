@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from batchmark.timer import TimingResult
 from batchmark.merger import merge
 from batchmark.merger_formatter import format_merge, format_merge_text, format_merge_json
@@ -71,3 +73,10 @@ def test_format_dispatch_text():
 def test_format_dispatch_json():
     report = _report()
     assert format_merge(report, fmt="json") == format_merge_json(report)
+
+
+def test_format_dispatch_unknown_fmt_raises():
+    """format_merge should raise ValueError for unrecognised format strings."""
+    report = _report()
+    with pytest.raises(ValueError, match="unknown format"):
+        format_merge(report, fmt="xml")
