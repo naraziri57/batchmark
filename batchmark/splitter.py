@@ -55,7 +55,13 @@ def split_results(
 
     Returns:
         SplitReport containing one Split per distinct label.
+
+    Raises:
+        ValueError: if *results* is empty.
     """
+    if not results:
+        raise ValueError("split_results requires at least one TimingResult")
+
     buckets: Dict[str, List[TimingResult]] = {}
     for r in results:
         label = key_fn(r)
